@@ -1,0 +1,80 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(to right, #00bfae, #007bff); /* Taustagradiendi */
+  color: #fff;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Navigaatiopalkin tyylit */
+nav {
+  width: 100%;
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* Modernit linkkityylit, jotka näyttävät napeilta */
+.nav-link {
+  padding: 12px 30px;
+  margin: 0 15px;
+  border: none;
+  border-radius: 50px; /* Pehmeät kulmat */
+  background-color: #34959c; /* Moderni väri */
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none; /* Poistaa alaviivan */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Varjo */
+  transition: all 0.3s ease; /* Pehmeät siirtymät */
+  outline: none;
+}
+
+/* Hover-efekti */
+.nav-link:hover {
+  background-color: #2470c2;
+  transform: translateY(-3px); /* Liikkuu hieman ylöspäin */
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2); /* Syvempi varjo hover-tilassa */
+}
+
+/* Focus-efekti */
+.nav-link:focus {
+  box-shadow: 0 0 0 4px rgba(38, 160, 255, 0.5); /* Sininen kehä fokuksessa */
+}
+
+/* Klikkaus-efekti (Active) */
+.nav-link:active {
+  transform: translateY(1px); /* Nappi menee hieman alas painettaessa */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Normaalivarjo */
+}
+
+/* Responsiivinen tuki (pienemmät näytöt) */
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+  }
+
+  .nav-button {
+    margin-bottom: 10px;
+  }
+}
