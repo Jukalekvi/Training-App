@@ -50,6 +50,15 @@ nav {
   outline: none;
 }
 
+/* Tyylit, jotka varmistavat että painikkeet näkyvät solun sisällä */
+.ag-theme-alpine .ag-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 !important; /* Poistaa mahdolliset ylimääräiset täytteet */
+}
+
+
 /* Hover-efekti */
 .nav-link:hover {
   background-color: #2470c2;

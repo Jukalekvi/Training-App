@@ -6,7 +6,7 @@ const NavigationBar = () => {
     <nav>
       <a className="nav-link" href="/trainings">Trainings</a>
       <a className="nav-link" href="/customers">Customers</a>
-      <a className="nav-link" href="/add">Add Training</a>
+      <a className="nav-link" href="/add-customer">Add a new customer</a>
     </nav>
   );
 };

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { TextField } from "@mui/material";
+import { getTrainings, getCustomers, getCustomerForTraining } from '../services/api'; // Tuodaan API-funktiot
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
-const API_URL = "https://customer-rest-service-frontend-personaltrainer.2.rahtiapp.fi/api/trainings";
-
 const TrainingList = () => {
   const [trainings, setTrainings] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,54 +16,42 @@ const TrainingList = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const trainingResponse = await fetch(API_URL);
-        if (!trainingResponse.ok) {
-          throw new Error("Failed to fetch trainings");
-        }
-        const trainingData = await trainingResponse.json();
+        // Haetaan koulutukset ja asiakkaat API:sta
+        const trainingData = await getTrainings();
+        const customerData = await getCustomers();
 
         if (trainingData._embedded && Array.isArray(trainingData._embedded.trainings)) {
+          // Luodaan asiakastiedot kunkin koulutuksen yhteyteen
           const trainingsWithCustomerInfo = await Promise.all(
             trainingData._embedded.trainings.map(async (training) => {
-              try {
-                const customerUrl = training._links.customer?.href;
-                let customerName = "Unknown";
+              let customerName = "Unknown";
+              const customerUrl = training._links.customer?.href; // Haetaan asiakaslinkki
 
-                if (customerUrl) {
-                  const customerResponse = await fetch(customerUrl);
-                  if (customerResponse.ok) {
-                    const customerData = await customerResponse.json();
-                    customerName = `${customerData.firstname} ${customerData.lastname}`;
-                  }
+              // Haetaan asiakastiedot asiakaslinkistä
+              if (customerUrl) {
+                try {
+                  const customer = await getCustomerForTraining(customerUrl);
+                  customerName = `${customer.firstname} ${customer.lastname}`;
+                } catch (error) {
+                  console.error("Error fetching customer data:", error);
+                  customerName = "Error loading customer"; // Jos asiakastietoa ei saada
                 }
-
-                const formattedDate = new Intl.DateTimeFormat("fi-FI", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }).format(new Date(training.date));
-
-                return {
-                  ...training,
-                  customerName,
-                  formattedDate,
-                };
-              } catch (error) {
-                console.error("Error fetching customer data:", error);
-                return {
-                  ...training,
-                  customerName: "Error loading customer",
-                  formattedDate: new Intl.DateTimeFormat("fi-FI", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(new Date(training.date)),
-                };
               }
+
+              // Muotoillaan päivämäärä halutulla tavalla (pp.kk.vvvv hh:mm)
+              const formattedDate = new Intl.DateTimeFormat("fi-FI", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(new Date(training.date));
+
+              return {
+                ...training,
+                customerName,
+                formattedDate,
+              };
             })
           );
 
@@ -80,7 +68,7 @@ const TrainingList = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // Tyhjä taulukko varmistaa, että tämä koodi suoritetaan vain kerran
 
   const handleSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
@@ -96,10 +84,10 @@ const TrainingList = () => {
   };
 
   const columns = [
-    { headerName: "Activity", field: "activity", flex: 1 },
-    { headerName: "Date", field: "formattedDate", flex: 1 },
-    { headerName: "Duration (min)", field: "duration", flex: 1 },
-    { headerName: "Customer", field: "customerName", flex: 1 },
+    { headerName: "Activity", field: "activity", flex: 1 },  // Harjoituksen nimi
+    { headerName: "Date", field: "formattedDate", flex: 1 }, // Aika
+    { headerName: "Duration (min)", field: "duration", flex: 1 }, // Kesto
+    { headerName: "Customer", field: "customerName", flex: 1 }, // Varaaja (asiakas)
   ];
 
   return (
@@ -107,7 +95,7 @@ const TrainingList = () => {
       className="training-list-container"
       style={{
         width: "100%",
-        maxWidth: "1400px", // Leveys kasvattettu
+        maxWidth: "1400px",
         margin: "auto",
         padding: "20px",
       }}
@@ -133,7 +121,7 @@ const TrainingList = () => {
           className="ag-theme-alpine"
           style={{
             height: "450px",
-            width: "100%", // Päivitetään leveys skaalautuvaksi
+            width: "100%",
             borderRadius: "10px",
             boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
           }}

@@ -1,27 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { TextField } from '@mui/material';
+import { TextField, Button } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-
-const API_URL = "https://customer-rest-service-frontend-personaltrainer.2.rahtiapp.fi/api/customers";
+import { deleteCustomer, getCustomers } from '../services/api';  // Tuodaan deleteCustomer ja getCustomers api.js:stä
 
 const CustomerList = () => {
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
 
+  // Ladataan asiakkaat API:sta
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error("Failed to fetch customers");
-        }
-        const data = await response.json();
+        const data = await getCustomers();  // Käytetään getCustomers API-funktiota
         if (data._embedded && Array.isArray(data._embedded.customers)) {
           const customersWithIds = data._embedded.customers.map((customer, index) => ({
             ...customer,
-            id: customer.id || index + 1,
+            id: customer.id || index + 1, // Jos id puuttuu, luodaan se automaattisesti
           }));
           setCustomers(customersWithIds);
         } else {
@@ -33,32 +30,55 @@ const CustomerList = () => {
     };
 
     fetchCustomers();
-  }, []);
+  }, []);  // Lähetetään requesti vain kerran komponentin latautuessa
 
   const handleSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
-    setSearch(searchValue);
+    setSearch(searchValue);  // Tallennetaan hakusanat tilaan
   };
 
+  const handleDelete = async (customerId) => {
+    try {
+      console.log("Deleting customer with id:", customerId);
+      await deleteCustomer(customerId);  // Poista asiakas
+      setCustomers(prevCustomers => prevCustomers.filter(customer => customer.id !== customerId)); // Päivitä asiakaslista
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+    }
+  };
+
+  // Päivitetään sarakeotsikot ja kentät
   const columns = [
     { headerName: "First Name", field: "firstname", flex: 1 },
     { headerName: "Last Name", field: "lastname", flex: 1 },
+    { headerName: "Street Address", field: "streetaddress", flex: 1 },
+    { headerName: "Postcode", field: "postcode", flex: 1 },
+    { headerName: "City", field: "city", flex: 1 },
     { headerName: "Email", field: "email", flex: 1 },
     { headerName: "Phone", field: "phone", flex: 1 },
+    {
+      headerName: "Actions", 
+      cellRenderer: (params) => (
+        <Button color="error" onClick={() => handleDelete(params.data.id)}>
+          <DeleteIcon />
+        </Button>
+      ),
+      flex: 1
+    },
   ];
 
   return (
-    <div 
+    <div
       className="customer-list-container"
       style={{
-        display: 'flex', // Lisätään flexbox, jotta voidaan keskittää
+        display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center', // Keskitetään sisällön leveyden mukaan
+        alignItems: 'center',
         justifyContent: 'flex-start',
-        maxWidth: '1200px', // Maksimileveys, kuten TrainingListissä
-        width: '100%', // Skaalautuu 100% leveydelle
-        margin: 'auto', // Keskitetään säiliö
-        padding: '20px', // Lisää tilaa säiliön sisällä
+        maxWidth: '1200px',
+        width: '100%',
+        margin: 'auto',
+        padding: '20px',
       }}
     >
       <h2 className="customer-list-title" style={{ textAlign: 'center' }}>Customers</h2>
@@ -72,7 +92,7 @@ const CustomerList = () => {
         fullWidth
         className="customer-search-field"
         style={{
-          marginBottom: '20px', // Lisää väliä gridin ja hakukentän väliin
+          marginBottom: '20px',
         }}
       />
 
@@ -80,10 +100,10 @@ const CustomerList = () => {
       <div
         className="customer-data-grid ag-theme-alpine"
         style={{
-          width: '100%', // Skaalaa grid koko parent-elementin leveyden mukaan
-          maxWidth: '100%', // Varmistetaan, että se ei mene yli
-          height: '450px', // Korkeus kiinteäksi
-          paddingTop: '10px', // Pieni väli ylhäältä
+          width: '100%',
+          maxWidth: '100%',
+          height: '450px',
+          paddingTop: '10px',
         }}
       >
         <AgGridReact
@@ -91,9 +111,7 @@ const CustomerList = () => {
           columnDefs={columns}
           pagination={false}
           paginationPageSize={10}
-          paginationPageSizeOptions={[10, 20, 50, 100]}
-          domLayout="normal" // Jätä "autoHeight" pois, kun haluat kontrolloida kokoa
-          quickFilterText={search}
+          quickFilterText={search}  // Tämä yhdistää hakukentän AG-Gridin sisäiseen suodattimeen
         />
       </div>
     </div>
