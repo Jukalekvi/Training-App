@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { TextField, Button, Snackbar, Alert } from '@mui/material';
+import { updateCustomer, getCustomer } from '../services/api';
 
-const AddCustomerPage = () => {
+const EditCustomer = () => {
+  const { id } = useParams(); // Asiakkaan ID
+  const navigate = useNavigate(); // Navigointiin
+
   const [customer, setCustomer] = useState({
     firstname: '',
     lastname: '',
@@ -12,89 +17,78 @@ const AddCustomerPage = () => {
     phone: '',
   });
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'info',
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  // Lomakekenttien muutoksen käsittely
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCustomer({
-      ...customer,
-      [name]: value,
-    });
-  };
-
-  // Lomakkeen lähetyksen käsittely
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const response = await fetch(
-        'https://customer-rest-service-frontend-personaltrainer.2.rahtiapp.fi/api/customers',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(customer),
-        }
-      );
-
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: 'Customer added successfully!',
-          severity: 'success',
-        });
-        setCustomer({
-          firstname: '',
-          lastname: '',
-          streetaddress: '',
-          postcode: '',
-          city: '',
-          email: '',
-          phone: '',
-        });
-      } else {
-        setSnackbar({
-          open: true,
-          message: 'Failed to add customer. Please try again.',
-          severity: 'error',
-        });
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setSnackbar({
-        open: true,
-        message: 'An error occurred. Please try again.',
-        severity: 'error',
-      });
+  useEffect(() => {
+    if (!id) {
+      showSnackbar('Invalid customer ID.', 'error');
+      return;
     }
+
+    const fetchCustomer = async () => {
+      try {
+        const data = await getCustomer(id);
+        setCustomer({
+          firstname: data.firstname,
+          lastname: data.lastname,
+          streetaddress: data.streetaddress,
+          postcode: data.postcode,
+          city: data.city,
+          email: data.email,
+          phone: data.phone,
+          _links: data._links,
+        });
+      } catch (error) {
+        console.error('Error fetching customer:', error);
+        showSnackbar('Error fetching customer. Please try again later.', 'error');
+      }
+    };
+
+    fetchCustomer(); // Hae asiakas
+  }, [id]);
+
+  const showSnackbar = (message, severity) => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const closeSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
-      open: false,
-    });
+    setSnackbar({ open: false, message: '', severity: 'info' });
+  };
+
+  const handleUpdate = async (event) => {
+    event.preventDefault();
+    try {
+      if (!customer._links || !customer._links.self.href) {
+        throw new Error('Customer URL not found');
+      }
+
+      await updateCustomer(customer._links.self.href, customer);
+      showSnackbar('Customer updated successfully!', 'success');
+      navigate('/customers'); // Takaisin asiakaslistaukseen
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      showSnackbar('Failed to update customer. Please try again.', 'error');
+    }
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setCustomer({ ...customer, [name]: value });
   };
 
   return (
     <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
-      <h2>Add New Customer</h2>
-      <form onSubmit={handleSubmit} noValidate>
+      <h2>Edit Customer</h2>
+
+      <form onSubmit={handleUpdate} noValidate>
         <TextField
           label="First Name"
           variant="outlined"
           fullWidth
           name="firstname"
           value={customer.firstname}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
         <TextField
           label="Last Name"
@@ -102,9 +96,8 @@ const AddCustomerPage = () => {
           fullWidth
           name="lastname"
           value={customer.lastname}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
         <TextField
           label="Street Address"
@@ -112,9 +105,8 @@ const AddCustomerPage = () => {
           fullWidth
           name="streetaddress"
           value={customer.streetaddress}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
         <TextField
           label="Postcode"
@@ -122,9 +114,8 @@ const AddCustomerPage = () => {
           fullWidth
           name="postcode"
           value={customer.postcode}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
         <TextField
           label="City"
@@ -132,9 +123,8 @@ const AddCustomerPage = () => {
           fullWidth
           name="city"
           value={customer.city}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
         <TextField
           label="Email"
@@ -142,9 +132,8 @@ const AddCustomerPage = () => {
           fullWidth
           name="email"
           value={customer.email}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
         <TextField
           label="Phone"
@@ -152,10 +141,10 @@ const AddCustomerPage = () => {
           fullWidth
           name="phone"
           value={customer.phone}
-          onChange={handleChange}
+          onChange={handleInputChange}
           style={{ marginBottom: '20px' }}
-          required
         />
+
         <Button
           type="submit"
           color="primary"
@@ -163,7 +152,7 @@ const AddCustomerPage = () => {
           fullWidth
           style={{ marginBottom: '20px' }}
         >
-          Add Customer
+          Update Customer
         </Button>
       </form>
 
@@ -181,4 +170,4 @@ const AddCustomerPage = () => {
   );
 };
 
-export default AddCustomerPage;
+export default EditCustomer;
